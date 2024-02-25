@@ -32,7 +32,7 @@ describe('Utils test suite', () => {
     expect(actual).toBe(expected);
   });
 
-  describe.only('ToUpperCase examples', () => {
+  describe('ToUpperCase examples', () => {
     it.each([
       { input: 'abc', expected: 'ABC' },
       { input: 'my-string', expected: 'MY-STRING' },
