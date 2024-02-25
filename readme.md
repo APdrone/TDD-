@@ -1,257 +1,222 @@
-# jest:
+# Intermediate testing topics
 
-jest is js/ts testing framework, developed by facebook
+# FIRST Principles
 
-also a assertion library.
-advantages:
+Principles, not rules, that may be followed when writing tests:
+First
+Independent
+repeatable
+Self-validating
+thorough
 
--we get powerful set of matchers
+# Jest hooks
 
-- all in one solution (test runner, asserting library , matchers)
-- typescript support
-
-# jest project setup
-
-to initialise packages:
-
-> npm init -y
-
-to install depdency
-
-> npm i -D typescript jest ts-jest @types/jest ts-node
-
-to set config file for jest
-
-> npx ts-jest config:init
-
-Jest configuration written to "D:\FrondEnd\Testing\Udemy\unitTesting-Jest\jest.config.js".
-
-as we are going to add typescript, we can remove this and add manually "jest.config.ts"
+we have updated the code to use class, wehave beforeEach, before all and similar for after
 
 ```ts
-//jest.config.ts
-import type { Config } from '@jest/types';
-
-const config: Config.InitialOptions = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  verbose: true,
-};
-export default config;
-```
-
-we will add new folder structure
-
-src > app - for dev code > test - for tests
-
-```ts
-//src/app=>util.ts
+export class StringUtils {
+  public toUpperCase(arg: string) {
+    return toUpperCase(arg);
+  }
+}
 
 export function toUpperCase(arg: string) {
   return arg.toUpperCase();
 }
 ```
 
-then to test it we can add
+```js
+//beforeEach and AfterEach hooks
 
-```ts
-//app/test ==>utils.spec.ts
+describe('StringUtils tests', () => {
+  let sut;
+  beforeEach(() => {
+    sut = new StringUtils();
+    console.log('Setup');
+  });
 
-import { toUpperCase } from '../app/Utils';
+  afterEach(() => {
+    //clearing mocks
+    console.log('Teardown');
+  });
+  it('should return correct Uppercase', () => {
+    const actual = sut.toUpperCase('abc');
 
-describe('Utils test suite', () => {
-  test('should return uppercase', () => {
-    const result = toUpperCase('abc');
-    expect(result).toBe('ABC');
+    expect(actual).toBe('ABC');
+    console.log('Actual Test');
   });
 });
 ```
 
-we can update the package.json with our test
+# Testing for errors
 
-```json
-
-  "scripts": {
-    "test": "jest"
-  },
-
-```
-
-when we run test
-
-> npm test
-
-our tests passed but we will pass get warning related to use of exports,
-
-```
-ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider setting `esModuleInterop` to `true` in your TypeScript configuration file (usually `tsconfig.json`). See https://blogs.msdn.microsoft.com/typescript/2018/01/31/announcing-typescript-2-7/#easier-ecmascript-module-interoperability for more information.
-
-```
-
-to resolve it , we will manually create "tsconfig.json" ts configuration:
+we will add error handling in our code, will throw error if input is undefined or null
 
 ```ts
-{
-  "compilerOptions": {
-    "esModuleInterop": true
+export class StringUtils {
+  public toUpperCase(arg: string) {
+    if (!arg) {
+      throw new Error('Invalid arguments');
+    }
+    return toUpperCase(arg);
   }
 }
 
-
+export function toUpperCase(arg: string) {
+  return arg.toUpperCase();
+}
 ```
 
-# structure of an unit test:
+there are different way in which we can test this error:
 
-Structure of a properly written unit test:
-AAA principles:
+1. we warp the code in different function which throws errors in jest and use throw error for checking error thrown or the text as well
 
-- arrange
-- act
-- assert
-
-Setup
-Teardown
-
-we wil convert our existing test case to new using this AAA principle:
+anther funciton "toThrowError" is depcreated and we can use "toThrow()" instead of it
 
 ```ts
-//old
+it.only('should throw error for invalid argument', () => {
+  function expectError() {
+    const actual = sut.toUpperCase('');
+  }
 
-import { toUpperCase } from '../app/Utils';
-
-describe('Utils test suite', () => {
-  test('should return uppercase', () => {
-    const result = toUpperCase('abc');
-    expect(result).toBe('ABC');
-  });
+  expect(expectError).toThrow();
+  // expect(expectError).toThrowError('Invalid arguments');
+  expect(expectError).toThrow('Invalid arguments');
 });
 ```
 
+2nd way is using arror function, direcly mentioning the funciton in the expect
+
 ```ts
-//sut: system under test
-//actual and expected: use for actual and expected values of test
-describe('Utils test suite', () => {
-  it('should return uppercase of valid string', () => {
-    //arrange:
-    const sut = toUpperCase;
-    const expected = 'ABC';
-
-    //act
-    const actual = toUpperCase('abc');
-
-    //assert
-    expect(actual).toBe(expected);
-  });
+it('should throw error for invalid argument-arrow', () => {
+  expect(() => sut.toUpperCase('')).toThrow('Invalid arguments');
 });
 ```
 
-# jest assertion and matchers
-
-matachers are which assist us in comparision, we can hover over them and see the details eg "toBe"
-
-> expect(actual).toBe(expected);
-
-whwn working with primitives types , we use "toBe"
-but when woking with objects we use "toEqual()"
+3rd way is to use try-catch
 
 ```ts
-expect(lowerCase).toBe('my-string');
-expect(extraInfo).toEqual({});
-```
-
-for string length we can use either toBe or toHaveLength
-
-```ts
-expect(characters).toBe(9);
-expect(characters).toHaveLength(9);
-```
-
-we can check for undefine
-
-```ts
-expect(extraInfo).not.toBe(undefined);
-expect(extraInfo).not.toBeUndefined();
-expect(extraInfo).toBeDefined();
-expect(extraInfo).toBeTruthy();
-```
-
-final code
-
-```ts
-it('should return info for valid string', () => {
-  // const actual = getStringInfo('My-String');
-
-  const { lowerCase, upperCase, characters, length, extraInfo } = getStringInfo('My-String');
-
-  expect(lowerCase).toBe('my-string');
-  expect(extraInfo).toEqual({});
-
-  expect(characters).toBe(9);
-  expect(characters).toHaveLength(9);
-  expect(characters).toEqual(['M', 'y', '-', 'S', 't', 'r', 'i', 'n', 'g']);
-  expect(characters).toContain<string>('M');
-
-  expect(extraInfo).not.toBe(undefined);
-  expect(extraInfo).not.toBeUndefined();
-  expect(extraInfo).toBeDefined();
-  expect(extraInfo).toBeTruthy();
-});
-```
-
-# multiple tests structure
-
-we changed the structure to this
-
-```ts
-  describe('getStringInfo for  arg My-String should', () => {
-    test('return right length', () => {
-      const actual = getStringInfo('My-String');
-      expect(actual.characters).toHaveLength(9);
-    });
-    test('return right lower case', () => {
-      const actual = getStringInfo('My-String');
-      expect(actual.lowerCase).toBe('my-string');
-    });
-    test('return right upper case', () => {
-      const actual = getStringInfo('My-String');
-      expect(actual.upperCase).toBe('MY-STRING');
-    });
-    test('return right characters', () => {
-      const actual = getStringInfo('My-String');
-      expect(actual.characters).toEqual(['M', 'y', '-', 'S', 't', 'r', 'i', 'n', 'g']);
-      expect(actual.characters).toContain<string>('M');
-      expect(actual.characters).toEqual(expect.arrayContaining(['S', 't', 'r', 'i', 'n', 'g', 'M', 'y', '-']));
-    });
-    test('return defined extra info', () => {
-      const actual = getStringInfo('My-String');
-      expect(actual.extraInfo).toBeDefined();
-    });
-
-    test('return right extra info', () => {
-      const actual = getStringInfo('My-String');
-      expect(actual.extraInfo).toEqual({});
-    });
-  });
-});
-
-```
-
-# Parameterised tests
-
-currently this test is testing same string "abc" everytime
-
-```ts
-describe('Utils test suite', () => {
-  it('should return uppercase of valid string', () => {
-    //arrange:
-    const sut = toUpperCase;
-    const expected = 'ABC';
-
-    //act
-    const actual = toUpperCase('abc');
-
-    //assert
-    expect(actual).toBe(expected);
+it.('should throw error for invalid argument-arrow', () => {
+      try {
+        sut.toUpperCase('');
+      } catch (err) {
+        expect(err).toBeInstanceOf(Error);
+        expect(err).toHaveProperty('message', 'Invalid arguments');
+      }
   });
 
 ```
+
+but problem with this 3rd approach ,if the code doesnt throw error then it would not go to catch block and test will still pass so we need to modify it
+
+we can add fail method, it will fail when code reach this line
+
+```ts
+it.only('should throw error for invalid argument-arrow', () => {
+  try {
+    sut.toUpperCase('');
+    fail('getStringInfo should throw error for invalid args!');
+  } catch (err) {
+    expect(err).toBeInstanceOf(Error);
+    expect(err).toHaveProperty('message', 'Invalid arguments');
+  }
+});
+```
+
+# Jest aliases and watch mode
+
+.only : to run only the one which is tagged to
+
+.skip: to skip test
+
+.concurrent: to run concurrently with other test
+
+.todo: to make skeleton of the tests, when it is not done or incompelte, it will mark it as todo when ran
+
+> test aliases:
+
+like we can use either test() or it() to write test
+
+similarly
+xit ==> .skip
+fit ==> .only
+
+> watch mode
+
+to enable watch mode we can add flag --watch
+
+"test": "jest --watch"
+
+now whenever we save , it will start the execution.no need to manually start the test
+
+# VScode debug configuration
+
+we will add "microsoft recipe" for debugging jest code
+
+[text](https://github.com/microsoft/vscode-recipes/tree/main/debugging-jest-tests)
+
+[text](https://github.com/microsoft/vscode-recipes/tree/master/debugging-jest-tests)
+
+click on tab "debug and run" and copy the code in the "launch.json"
+
+```json
+{
+  "type": "node",
+  "request": "launch",
+  "name": "Jest Current File",
+  "program": "${workspaceFolder}/node_modules/.bin/jest",
+  "args": ["${fileBasenameNoExtension}", "--config", "jest.config.js"],
+  "console": "integratedTerminal",
+  "internalConsoleOptions": "neverOpen",
+  "disableOptimisticBPs": true,
+  "windows": {
+    "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+  }
+}
+```
+
+# test coverage
+
+we can add below configs in the jest
+
+```ts
+// collectCoverage: true,
+// collectCoverageFrom: ['<rootDir>/src/app/**/*.ts'],
+
+import type { Config } from '@jest/types';
+
+const config: Config.InitialOptions = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  verbose: true,
+
+  collectCoverage: true,
+  collectCoverageFrom: ['<rootDir>/src/app/**/*.ts'],
+};
+export default config;
+```
+
+then run jest test, it will provide coverage folder and we can open html file there and also can see the same in the terminal
+
+under the hood, jest uses "Istanbul" library for getting code coverage
+
+we can refer below to ignore certtain sections from coverage(which are trivial or not required)
+
+[text](https://github.com/gotwarlost/istanbul/blob/master/ignoring-code-for-coverage.md)
+
+like in dev code we can mention it as :
+
+```ts
+/* istanbul ignore next */
+export function getStringInfo(arg: string): stringInfo {
+  return {
+    lowerCase: arg.toLowerCase(),
+    upperCase: arg.toUpperCase(),
+    characters: Array.from(arg),
+    length: arg.length,
+    extraInfo: {},
+  };
+}
+```
+
+only use it when done with unit testing .
